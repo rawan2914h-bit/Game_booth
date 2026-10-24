@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0820">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="تثق ولا ما تثق؟">
+<title>تثق ولا ما تثق؟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@500;700&display=swap">
+<style>
+/* Layout: the whole game lives inside one phone. No answer buttons: the player uses the phone (taps, types, calls, swipes) and her actions decide the outcome. Single dark look, matching the group's neon poster. */
+:root{
+  color-scheme: dark;
+  --night:#07061a;
+  --wall-a:#1a1250;
+  --wall-b:#0a1a3a;
+  --glass:rgba(255,255,255,.10);
+  --glass-2:rgba(255,255,255,.16);
+  --surface:#141130;
+  --surface-2:#1e1a45;
+  --line:#2f2a66;
+  --text:#f1efff;
+  --muted:#9f99cf;
+  --neon:#a78bfa;
+  --neon-2:#7c5cff;
+  --cyan:#5eead4;
+  --safe:#34d399;
+  --danger:#ff4d6d;
+  --warn:#fbbf24;
+  --me:#5b45d6;
+  --them:#26215a;
+  --display:"Reem Kufi","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--night);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.6;
+  background-image:radial-gradient(50rem 26rem at 80% -10%,#24186a 0%,transparent 60%),radial-gradient(36rem 22rem at 0% 110%,#0f2a5c 0%,transparent 60%);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;overflow-x:hidden;
+}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.25;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+/* HUD outside the phone */
+.hud{width:min(390px,100%);display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+.hud b{font-family:var(--display);color:var(--text);font-size:15px;font-weight:500}
+.dots{display:flex;gap:5px}
+.dot{width:20px;height:5px;border-radius:3px;background:var(--line)}
+.dot.now{background:var(--neon)}.dot.ok{background:var(--safe)}.dot.bad{background:var(--danger)}
+.snd{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px}
+
+/* phone */
+.phone{width:min(390px,100%);height:min(760px,calc(100% - 40px));min-height:560px;flex:1 1 auto;border-radius:44px;padding:9px;background:#020208;
+  box-shadow:0 0 0 2px #2b2560,0 0 60px rgba(124,92,255,.25),0 30px 80px rgba(0,0,0,.6);position:relative}
+.phone.shake{animation:shake .09s linear 6}
+.screen{position:relative;height:100%;border-radius:36px;overflow:hidden;
+  background:radial-gradient(120% 70% at 100% 0%,#3a1f8f 0%,transparent 55%),linear-gradient(160deg,var(--wall-a),var(--wall-b));display:flex;flex-direction:column}
+.status{display:flex;justify-content:space-between;align-items:center;padding:12px 26px 4px;font-size:13px;font-weight:600;direction:ltr;z-index:5;font-variant-numeric:tabular-nums;flex:none}
+.status .bat{display:flex;gap:6px;align-items:center}
+.batt{width:24px;height:11px;border:1.5px solid currentColor;border-radius:3px;padding:1px;display:inline-flex}
+.batt i{display:block;height:100%;background:currentColor;border-radius:1px}
+.view{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.homebar{flex:none;height:26px;display:grid;place-items:center;z-index:6}
+.homebar button{width:130px;height:5px;border-radius:3px;background:rgba(255,255,255,.75)}
+.homebar button[disabled]{opacity:.25;cursor:default}
+
+/* notifications */
+.notifs{position:absolute;top:40px;left:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:20;pointer-events:none}
+.notif{pointer-events:auto;text-align:start;width:100%;background:rgba(30,26,70,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;animation:drop .45s cubic-bezier(.2,1.3,.4,1) both;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.notif.out{animation:up .3s ease forwards}
+.notif .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:700;flex:none;font-size:14px}
+.notif .tx{min-width:0;flex:1;font-size:14px;line-height:1.45}
+.notif .hd{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.notif .ti{font-weight:700}
+.notif.red{border-color:rgba(255,77,109,.6);background:rgba(80,10,30,.85)}
+.toast{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:7px 14px;border-radius:999px;font-size:13px;z-index:25;white-space:nowrap;animation:pop .25s both}
+
+/* lock / wall */
+.lock{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 22px 10px;gap:6px}
+.lock .date{font-size:15px;color:#d9d4ff;margin-top:10px}
+.lock .clock{font-family:var(--display);font-size:84px;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;direction:ltr;text-shadow:0 0 30px rgba(167,139,250,.5)}
+.lock .game{margin-top:auto;display:flex;flex-direction:column;gap:12px;align-items:center;background:var(--glass);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:18px;backdrop-filter:blur(10px)}
+.lock .game h1{font-size:30px;text-shadow:0 0 16px rgba(167,139,250,.7)}
+.lock .game p{font-size:14px;color:#d6d1ff}
+.swipe{margin-top:6px;font-size:14px;color:#fff;background:linear-gradient(135deg,var(--neon-2),#c026d3);padding:12px 22px;border-radius:999px;box-shadow:0 8px 26px rgba(124,92,255,.5);animation:float 1.8s ease-in-out infinite}
+.hint{margin-top:auto;padding:10px 20px 14px;text-align:center;font-size:13px;color:#cfc9ff;opacity:.85}
+.chapter{margin-top:22%;text-align:center;display:flex;flex-direction:column;gap:6px;padding:0 24px}
+.chapter small{color:var(--cyan);letter-spacing:.08em;font-size:12px}
+.chapter h2{font-size:30px}
+.chapter p{color:#d0cbff;font-size:14px}
+
+/* chat */
+.chat{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--surface)}
+.ch-head{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);flex:none}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:linear-gradient(135deg,#7c5cff,#c026d3);color:#fff;flex:none}
+.who{display:flex;flex-direction:column;line-height:1.3;min-width:0;flex:1}
+.who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who small{color:var(--muted);font-size:12px}
+.acts{display:flex;gap:4px}
+.icon-btn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--neon)}
+.icon-btn:hover{background:var(--glass)}
+.icon-btn svg{width:21px;height:21px}
+.thread{flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;
+  background-image:radial-gradient(rgba(167,139,250,.07) 1px,transparent 1px);background-size:16px 16px}
+.msg{max-width:82%;padding:8px 12px 5px;border-radius:16px;background:var(--them);align-self:flex-start;animation:pop .3s ease both;overflow-wrap:anywhere;border-end-start-radius:4px}
+.msg.me{align-self:flex-end;background:var(--me);border-end-start-radius:16px;border-end-end-radius:4px}
+.msg time{display:block;font-size:10px;color:rgba(255,255,255,.55);text-align:end;direction:ltr}
+.mono{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.iban{display:block;margin:6px 0;background:rgba(0,0,0,.25);border-radius:8px;padding:6px 8px;font-size:13px}
+.inline-btn{display:block;width:100%;margin-top:4px;padding:8px;border-radius:10px;background:var(--neon-2);font-weight:600;font-size:14px}
+.link{color:var(--cyan);text-decoration:underline;direction:ltr;unicode-bidi:isolate;text-align:start}
+.typing{align-self:flex-start;background:var(--them);border-radius:16px;padding:10px 14px;display:flex;gap:4px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+.composer{display:flex;gap:8px;padding:8px 10px;background:var(--surface-2);border-top:1px solid var(--line);flex:none}
+.composer input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:9px 14px;color:var(--text);font:inherit}
+.composer button{width:40px;height:40px;border-radius:50%;background:var(--neon-2);display:grid;place-items:center;flex:none}
+.composer svg{width:18px;height:18px;transform:scaleX(-1)}
+.pill{position:absolute;top:62px;left:50%;transform:translateX(-50%);background:rgba(255,77,109,.18);border:1px solid var(--danger);color:#ffd0d9;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:600;z-index:4;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill.hot{animation:pulse-r 1s infinite}
+
+/* bank transfer */
+.app{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--surface);overflow-y:auto}
+.app-top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.app-top h3{font-size:17px;flex:1}
+.app-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.field{background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.field small{color:var(--muted);font-size:12px}
+.amount{font-family:var(--display);font-size:40px;text-align:center;font-variant-numeric:tabular-nums}
+.amount small{font-size:16px;color:var(--muted)}
+.slide{position:relative;height:58px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-top:6px}
+.slide span{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:var(--muted);pointer-events:none}
+.slide input{-webkit-appearance:none;appearance:none;width:100%;height:100%;background:transparent;margin:0;direction:rtl}
+.slide input::-webkit-slider-thumb{-webkit-appearance:none;width:52px;height:52px;border-radius:50%;background:var(--neon-2);border:3px solid #fff;cursor:grab}
+.slide input::-moz-range-thumb{width:48px;height:48px;border-radius:50%;background:var(--neon-2);border:3px solid #fff;cursor:grab}
+
+/* fake browser */
+.browser{flex:1;min-height:0;display:flex;flex-direction:column;background:#f4f4f7;color:#1b1b28}
+.urlbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#e7e7ee;flex:none}
+.urlbar .u{flex:1;min-width:0;background:#fff;border-radius:10px;padding:6px 10px;font-size:13px;direction:ltr;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.urlbar .u em{color:#d7263d;font-style:normal;font-weight:700}
+.urlbar button{color:#333;font-size:20px;width:30px}
+.page{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;color:#e2541b;font-size:18px}
+.brand i{width:28px;height:28px;border-radius:7px;background:#e2541b;display:inline-block}
+.page h3{font-size:19px;color:#1b1b28}
+.count{background:#ffe5e8;color:#c1121f;border-radius:12px;padding:10px;text-align:center;font-weight:700}
+.count b{font-size:26px;display:block;font-variant-numeric:tabular-nums;direction:ltr}
+.pf{border:1px solid #d6d6e0;border-radius:10px;padding:9px 12px;background:#fff;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.pf small{color:#777}
+.pay{background:#e2541b;color:#fff;border-radius:12px;padding:14px;font-weight:700;font-size:16px;animation:bait 1.2s infinite}
+.fine{font-size:11px;color:#888;text-align:center}
+
+/* home screen */
+.home{flex:1;padding:24px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px 10px;align-content:start}
+.appicon{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;color:#fff}
+.appicon i{width:58px;height:58px;max-width:100%;aspect-ratio:1;border-radius:15px;display:grid;place-items:center;font-style:normal;font-size:24px;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+
+/* calls */
+.call{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 18px 18px;text-align:center;background:linear-gradient(180deg,rgba(20,10,60,.4),rgba(0,0,0,.65))}
+.call .avatar{width:84px;height:84px;font-size:32px}
+.call .nm{font-family:var(--display);font-size:24px;margin-top:8px}
+.call .sb{color:var(--muted);font-size:14px}
+.ringing{animation:ringa 1.2s infinite}
+.callbtns{margin-top:auto;display:flex;justify-content:space-around;width:100%}
+.cbtn{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px}
+.cbtn i{width:66px;height:66px;border-radius:50%;display:grid;place-items:center}
+.cbtn i svg{width:28px;height:28px}
+.cbtn.no i{background:var(--danger)}
+.cbtn.yes i{background:var(--safe);animation:pulse-g 1.3s infinite}
+.cbtn.gray i{background:var(--glass-2)}
+.transcript{width:100%;display:flex;flex-direction:column;gap:7px;text-align:start;overflow-y:auto;flex:1;min-height:0;padding-top:8px}
+.say{background:var(--glass);border-radius:12px;padding:7px 11px;font-size:14px;animation:pop .3s both}
+.say.u{border:1px solid var(--danger);background:rgba(255,77,109,.15)}
+.say.sys{background:rgba(94,234,212,.12);border:1px solid rgba(94,234,212,.4)}
+.ring{position:relative;width:72px;height:72px;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
+.ring.hot span{color:var(--danger)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:250px;margin:4px auto 0}
+.keypad button{height:50px;border-radius:50%;background:var(--glass-2);font-size:22px;font-weight:600;aspect-ratio:1;justify-self:center;width:50px}
+.entered{font-size:26px;letter-spacing:.2em;min-height:36px;direction:ltr;font-variant-numeric:tabular-nums}
+
+/* sheet (outcome) */
+.vig{position:absolute;inset:0;pointer-events:none;z-index:15;box-shadow:inset 0 0 0 0 rgba(255,0,60,0);transition:box-shadow .4s}
+.vig.on{box-shadow:inset 0 0 90px 20px rgba(255,0,60,.55);animation:vig 1s infinite}
+.flash{position:absolute;inset:0;z-index:28;pointer-events:none;animation:flash .7s forwards}
+.sheet{position:absolute;inset:0;z-index:30;background:rgba(7,6,26,.6);backdrop-filter:blur(6px);display:flex;align-items:flex-end}
+.sheet .in{width:100%;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding:20px 18px 18px;display:flex;flex-direction:column;gap:11px;animation:rise .45s cubic-bezier(.2,1,.3,1) both;border-top:3px solid var(--line)}
+.sheet.bad .in{border-top-color:var(--danger)}
+.sheet.good .in{border-top-color:var(--safe)}
+.verdict{font-family:var(--display);font-size:26px}
+.sheet.bad .verdict{color:var(--danger);text-shadow:0 0 18px rgba(255,77,109,.5)}
+.sheet.good .verdict{color:var(--safe)}
+.what{font-size:15px}
+.label{font-size:12px;letter-spacing:.06em;color:var(--cyan);font-weight:600}
+.flags{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+.flags li{font-size:12.5px;border:1px solid rgba(251,191,36,.5);color:var(--warn);border-radius:999px;padding:2px 10px}
+.safe{border-inline-start:3px solid var(--safe);padding-inline-start:10px;font-size:14.5px}
+.next{margin-top:4px;background:linear-gradient(135deg,var(--neon-2),#a855f7);border-radius:14px;padding:13px;font-weight:700;font-size:16px;color:#fff}
+.next.ghost{background:transparent;border:1px solid var(--line)}
+
+/* results */
+.report{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--surface)}
+.big{font-family:var(--display);font-size:72px;line-height:1;text-align:center;color:var(--neon);text-shadow:0 0 22px rgba(167,139,250,.55);font-variant-numeric:tabular-nums}
+.review{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.review li{display:flex;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:12px;padding:9px 12px;font-size:14px}
+.motto{font-family:var(--display);font-size:26px;text-align:center;color:var(--cyan);text-shadow:0 0 14px rgba(94,234,212,.45)}
+
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-40px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes up{to{opacity:0;transform:translateY(-30px)}}
+@keyframes rise{from{transform:translateY(100%)}to{transform:none}}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translate(-3px,1px) rotate(-.4deg)}75%{transform:translate(3px,-1px) rotate(.4deg)}}
+@keyframes ringa{0%,100%{transform:rotate(0)}10%{transform:rotate(-12deg)}20%{transform:rotate(12deg)}30%{transform:rotate(-8deg)}40%{transform:rotate(0)}}
+@keyframes pulse-g{0%{box-shadow:0 0 0 0 rgba(52,211,153,.6)}100%{box-shadow:0 0 0 18px rgba(52,211,153,0)}}
+@keyframes pulse-r{0%,100%{background:rgba(255,77,109,.18)}50%{background:rgba(255,77,109,.45)}}
+@keyframes bait{0%{box-shadow:0 0 0 0 rgba(226,84,27,.55)}100%{box-shadow:0 0 0 12px rgba(226,84,27,0)}}
+@keyframes vig{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes flash{0%{background:rgba(255,0,60,.6)}100%{background:transparent}}
+/* on a real phone: no frame, the game takes the whole screen like a real phone UI */
+@media (max-width:520px){
+  body{padding:0;gap:0;height:100%;min-height:100dvh}
+  .hud{position:fixed;bottom:calc(30px + env(safe-area-inset-bottom,0px));left:12px;width:auto;z-index:50;pointer-events:none}
+  .hud b,.hud .dots{display:none}
+  .hud .snd{pointer-events:auto;background:rgba(0,0,0,.4);color:#fff;font-size:11px;opacity:.7}
+  .phone{width:100%;height:100dvh;min-height:0;border-radius:0;padding:0;box-shadow:none;background:transparent}
+  .screen{border-radius:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .status{display:none}
+  .notifs{top:calc(8px + env(safe-area-inset-top,0px))}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="hud" dir="rtl" lang="ar">
+  <b>تثق ولا ما تثق؟</b>
+  <div class="dots" id="dots"></div>
+  <button class="snd" id="snd" aria-pressed="true">الصوت: يعمل</button>
+</div>
+
+<div class="phone" id="phone" dir="rtl" lang="ar">
+  <div class="screen" id="screen">
+    <div class="status"><span id="clk">13:29</span><span class="bat"><span>5G</span><span class="batt"><i id="battfill" style="width:62%"></i></span></span></div>
+    <div class="view" id="view"></div>
+    <div class="homebar"><button id="homebtn" data-act="home" aria-label="الشاشة الرئيسية" disabled></button></div>
+    <div class="notifs" id="notifs"></div>
+    <div class="vig" id="vig"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- tiny helpers ---------- */
+const $ = h => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const view = document.getElementById('view');
+const notifsEl = document.getElementById('notifs');
+const screenEl = document.getElementById('screen');
+const phoneEl = document.getElementById('phone');
+const vig = document.getElementById('vig');
+const homeBtn = document.getElementById('homebtn');
+const AR = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+const toLatin = s => s.replace(/[٠-٩]/g, d => AR.indexOf(d));
+const now = () => { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
+setInterval(() => { document.getElementById('clk').textContent = now(); }, 5000);
+document.getElementById('clk').textContent = now();
+
+const ICON = {
+  phone:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>',
+  hang:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1a1 1 0 0 1-.56.9c-.98.49-1.87 1.12-2.66 1.85a1 1 0 0 1-1.4-.02L.3 13.08a1 1 0 0 1 0-1.41C3.3 8.76 7.45 7 12 7s8.7 1.76 11.7 4.67a1 1 0 0 1 0 1.41l-2.48 2.48a1 1 0 0 1-1.4.02 11.3 11.3 0 0 0-2.66-1.85 1 1 0 0 1-.56-.9v-3.1A15 15 0 0 0 12 9z"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>',
+  block:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V14l9-2-9-2V3.5L22 12z"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>',
+  keys:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="6" cy="11" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="18" cy="11" r="2"/><circle cx="6" cy="17" r="2"/><circle cx="12" cy="17" r="2"/><circle cx="18" cy="17" r="2"/><circle cx="12" cy="22" r="1.6"/></svg>'
+};
+
+/* ---------- sound ---------- */
+let soundOn = true, ac = null;
+const sndBtn = document.getElementById('snd');
+sndBtn.onclick = () => { soundOn = !soundOn; sndBtn.textContent = 'الصوت: ' + (soundOn ? 'يعمل' : 'مكتوم'); sndBtn.setAttribute('aria-pressed', soundOn); };
+function A(){ if(!soundOn) return null; try{ if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume(); }catch(e){ return null; } return ac; }
+function tone(f,d,type='sine',g=.12,when=0){ const a=A(); if(!a) return; const o=a.createOscillator(), v=a.createGain(); o.type=type; o.frequency.value=f; const t=a.currentTime+when; v.gain.setValueAtTime(0,t); v.gain.linearRampToValueAtTime(g,t+.01); v.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(v).connect(a.destination); o.start(t); o.stop(t+d+.05); }
+const sfx = {
+  ding(){ tone(880,.14,'sine',.12); tone(1320,.22,'sine',.1,.1); },
+  beat(){ tone(62,.16,'sine',.55); tone(52,.22,'sine',.45,.2); },
+  tick(){ tone(1900,.03,'square',.035); },
+  ring(){ // a loud two-tone phone ringtone (two bursts, like a real call)
+    for(const base of [0,.5]){ [0,.14].forEach((w,i)=>{ tone(i?1046:784,.13,'triangle',.3,base+w); tone(i?659:523,.13,'square',.12,base+w); }); } },
+  back(){ tone(425,.4,'sine',.08); },
+  alarm(){ tone(240,.35,'sawtooth',.1); tone(170,.6,'sawtooth',.1,.3); },
+  good(){ [523,659,784,1046].forEach((f,i)=>tone(f,.2,'sine',.1,i*.09)); },
+  key(){ tone(1200,.06,'sine',.07); }
+};
+function vibe(p){ try{ if(soundOn && navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+function buzz(){ phoneEl.classList.remove('shake'); void phoneEl.offsetWidth; phoneEl.classList.add('shake'); vibe(60); }
+function ringBuzz(){ sfx.ring(); buzz(); vibe([0,400,200,400]); }
+
+/* ---------- game state ---------- */
+const TITLES = ['رسالة من صديقة','شحنتك متعطلة','رمز ما طلبتيه','مكالمة من البنك'];
+let state = { i:0, score:0, res:[] };
+let cur = null, timers = [];
+function cleanup(){ timers.forEach(t=>{clearTimeout(t);clearInterval(t);}); timers=[]; vig.classList.remove('on'); try{navigator.vibrate&&navigator.vibrate(0);}catch(e){} }
+function every(fn,ms){ const t=setInterval(fn,ms); timers.push(t); return t; }
+function later(fn,ms){ const t=setTimeout(fn,ms); timers.push(t); return t; }
+function drawDots(){
+  document.getElementById('dots').innerHTML = TITLES.map((_,k)=>{ const r=state.res[k]; return `<span class="dot ${r===undefined?(k===state.i&&cur?'now':''):(r?'ok':'bad')}"></span>`; }).join('');
+}
+function newScene(){
+  cleanup(); notifsEl.innerHTML='';
+  const sc = { done:false, acts:{}, view:'' };
+  sc.alive = () => cur===sc && !sc.done;
+  sc.wait = ms => new Promise(r=>later(r,ms)).then(()=>sc.alive());
+  cur = sc; drawDots();
+  return sc;
+}
+// one click handler for everything inside the phone
+phoneEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if(!b || !cur || cur.done) return;
+  const f = cur.acts[b.dataset.act]; if(f){ e.preventDefault(); f(b); }
+});
+function setHome(enabled){ homeBtn.disabled = !enabled; }
+
+function notify({ic='💬', icBg='#7c5cff', app, title, body, act, red=false, stay=5200}){
+  sfx.ding(); buzz();
+  const n = $(`<button class="notif ${red?'red':''}" ${act?`data-act="${act}"`:''}><span class="ic" style="background:${icBg}">${ic}</span><span class="tx"><span class="hd"><span>${app}</span><span>الآن</span></span><span class="ti">${title}</span><br>${body}</span></button>`);
+  notifsEl.prepend(n);
+  while(notifsEl.children.length>3) notifsEl.lastElementChild.remove();
+  setTimeout(()=>{ n.classList.add('out'); setTimeout(()=>n.remove(),300); }, stay);
+  return n;
+}
+function toast(t){ const el=$(`<div class="toast">${t}</div>`); screenEl.append(el); setTimeout(()=>el.remove(),1800); }
+
+/* chat view backed by a model, so messages that arrive while you're elsewhere are kept */
+function chatView(sc, conv){
+  sc.view='chat';
+  view.innerHTML = `<div class="chat">
+    <div class="ch-head"><div class="avatar">${conv.initial}</div><div class="who"><b>${conv.name}</b><small>${conv.sub}</small></div>
+    <div class="acts">${(conv.actions||[]).map(a=>`<button class="icon-btn" data-act="${a.act}" aria-label="${a.label}" title="${a.label}">${ICON[a.icon]}</button>`).join('')}</div></div>
+    <div class="thread" id="thread"></div>
+    ${conv.input?`<form class="composer" id="comp"><input id="msgin" autocomplete="off" placeholder="اكتبي رسالة…"><button aria-label="إرسال">${ICON.send}</button></form>`:''}
+  </div>`;
+  const th = view.querySelector('#thread');
+  conv.msgs.forEach(m=>th.append(bubble(m, false)));
+  th.scrollTop = th.scrollHeight;
+  if(conv.input){
+    const inp = view.querySelector('#msgin');
+    if(conv.prefill){ inp.value = conv.prefill; conv.prefill=''; }
+    view.querySelector('#comp').onsubmit = e => { e.preventDefault(); const v=inp.value.trim(); if(!v||sc.done) return; inp.value=''; addMsg(sc,conv,{t:esc(v),me:true}); conv.onSend && conv.onSend(v); };
+  }
+}
+const esc = s => s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function bubble(m, anim=true){ const el=$(`<div class="msg ${m.me?'me':''}">${m.t}<time>${m.time}</time></div>`); if(!anim) el.style.animation='none'; return el; }
+function addMsg(sc, conv, m){
+  m.time = now(); conv.msgs.push(m);
+  if(sc.view==='chat'){ const th=view.querySelector('#thread'); if(th){ th.querySelector('.typing')?.remove(); th.append(bubble(m)); th.scrollTop=th.scrollHeight; } if(!m.me) sfx.tick(); }
+  else if(!m.me){ notify({app:conv.app||'المحادثات', title:conv.name, body:m.t.replace(/<[^>]+>/g,' ').slice(0,70), act:'openchat'}); }
+}
+async function typeIn(sc, conv, m, ms=900){
+  if(sc.view==='chat'){ const th=view.querySelector('#thread'); if(th && !th.querySelector('.typing')){ th.append($('<div class="typing"><i></i><i></i><i></i></div>')); th.scrollTop=th.scrollHeight; } }
+  if(!await sc.wait(ms)) return false;
+  addMsg(sc,conv,m); return true;
+}
+// keeps nagging until the scene ends
+function nag(sc, conv, lines, ms){
+  let k=0;
+  const id = every(()=>{ if(!sc.alive() || sc.quiet || k>=lines.length){ clearInterval(id); return; } addMsg(sc,conv,{t:lines[k++]}); if(sc.view==='chat') buzz(); }, ms);
+}
+// "no" in its common Saudi forms
+const REFUSE = /(^|\s)(لا|لأ|لاء|لاا+)(\s|$|[!.،,؟])|ما\s?(اقدر|أقدر|راح|بـ|ب[ارحعن]|ابي|أبي|ابغى|أبغى|اعطي|أعطي|ارسل|أرسل|احول|أحول|عندي)|مستحيل|ابد[اًا]?|أبد[اًا]?|ماني|مانيب|رافض|ماراح|انسى|إنسى/;
+// one insist after the first "no", then they give up and the round closes
+async function refusal(sc, conv, insist, giveUp, key){
+  sc.quiet = true; sc.refusals = (sc.refusals||0) + 1;
+  if(sc.refusals === 1){ await typeIn(sc,conv,{t:insist},1100); return; }
+  if(!await typeIn(sc,conv,{t:giveUp},1000)) return;
+  if(!await sc.wait(700)) return;
+  addMsg(sc,conv,{t:'<i style="color:var(--muted);font-size:13px">غادر هذا الحساب المحادثة</i>'});
+  if(!await sc.wait(1100)) return;
+  finish(sc,true,key);
+}
+
+/* ---------- endings ---------- */
+const OUT = [
+  { flags:['استعجال','طلب مال','ترفض المكالمات','آيبان جديد'],
+    safe:'تواصلي مع صاحبتك بالاتصال أو بطريقة موثوقة ثانية وتأكدي قبل أي تحويل.',
+    bad:{ transfer:'حوّلتي ١٥٠٠ ريال… لحساب محتال. حساب نورة كان مخترق، واللي يكلمك مو هي.' },
+    good:{ call:'اتصلتي على نورة وطلعت ما تدري عن شي! حسابها انسرق والمحتال كان يستغل ثقتك فيها.',
+           refuse:'رفضتي تحولين، حاول مرة ثانية وبعدها انسحب. الخطوة الأفضل بعدها: اتصلي على نورة ونبهيها إن حسابها مخترق.' } },
+  { flags:['رقم جوال شخصي مو رسمي','رابط غريب','عدّاد ومهلة','مبلغ صغير كطُعم'],
+    safe:'لا تفتحين الرابط. ادخلي تطبيق شركة الشحن الرسمي أو موقعها بنفسك وتحققي من الشحنة.',
+    bad:{ pay:'دفعتي ٤٫٥٠ ريال بس… والمحتال أخذ بيانات بطاقتك كاملة. شوفي العمليات اللي نزلت بعدها.' },
+    good:{ report:'بلّغتي عن الرسالة وحذفتيها بدون ما تفتحين الرابط. هذا بالضبط التصرف الصح.',
+           app:'دخلتي تطبيق الشحن الرسمي بنفسك، وطلع ما فيه أي شحنة متعطلة. الرسالة كانت فخ.' } },
+  { flags:['رمز ما طلبتيه','حساب غريب','قصة "بالغلط"','عدّاد صلاحية الرمز'],
+    safe:'رمز التحقق لك وحدك. لا ترسلينه لأي أحد ولا حتى جزء منه، وفعّلي التحقق الثنائي وراجعي أمان حسابك.',
+    bad:{ code:'أرسلتي الرمز… وخلال ثواني دخل المحتال حسابك وغيّر الرقم والإيميل. الرمز وصلك لأنه كان يحاول يدخل حسابك أنتِ.' },
+    good:{ block:'حظرتيه وبلّغتي عنه بدون ما ترسلين الرمز. حسابك بأمان.',
+           timeout:'خلّصت صلاحية الرمز وأنتِ ما أرسلتيه. صمدتي قدام الضغط، وحسابك بأمان.',
+           refuse:'رفضتي ترسلين الرمز، حاول مرة ثانية وبعدها انسحب. حسابك بأمان.' } },
+  { flags:['عدّاد وضغط وقت','تخويف بخسارة المال','طلب رمز التحقق','الرسالة تقول "لإتمام دفع" مو "لإلغاء"'],
+    safe:'أنهي المكالمة، واتصلي أنتِ بنفسك على الرقم الرسمي المكتوب خلف بطاقتك أو في تطبيق البنك. البنك ما يطلب رمز التحقق أبدًا.',
+    bad:{ keypad:'أدخلتي الرمز… والرمز ما كان لإلغاء العملية، كان لاعتمادها. اقرئي رسالة الرمز: مكتوب فيها "لإتمام عملية دفع".' },
+    good:{ hangup:'سكّرتي الخط في وجه المحتال. البنك الحقيقي ما يطلب رمز التحقق في مكالمة.',
+           decline:'رفضتي المكالمة، رجع اتصل مرة ثانية ورفضتي، وبعدها استسلم. الإلحاح نفسه علامة احتيال.',
+           timeout:'خلص العدّاد وما صار شي! العدّاد كان وهمي، والعملية ما كانت بتتم إلا برمزك.' } }
+];
+const TRAP_FX = [
+  [['بنكي','تم تحويل 1,500.00 ر.س إلى مستفيد جديد'],['المحادثات','نورة: شكرًا 😂']],
+  [['بنكي','عملية شراء 2,349.00 ر.س – متجر إلكتروني'],['بنكي','عملية شراء 1,180.00 ر.س – متجر إلكتروني'],['بنكي','عملية شراء 899.00 ر.س']],
+  [['الأمان','تسجيل دخول لحسابك من جهاز جديد'],['الأمان','تم تغيير رقم الجوال المرتبط بالحساب'],['الأمان','تم تسجيل خروجك من جميع الأجهزة']],
+  [['بنكي','تم خصم 3,800.00 ر.س من بطاقتك'],['بنكي','رصيدك المتاح: 214.60 ر.س']]
+];
+
+async function finish(sc, ok, key){
+  if(sc.done) return; sc.done = true; cleanup();
+  const i = state.i; state.res[i] = ok; if(ok) state.score++;
+  if(!ok){
+    sfx.alarm(); screenEl.append($('<div class="flash"></div>')); vig.classList.add('on');
+    for(const [app,body] of TRAP_FX[i]){ notify({ic:'!',icBg:'#ff4d6d',app,title:app==='المحادثات'?'':'تنبيه',body,red:true,stay:6000}); await new Promise(r=>setTimeout(r,650)); }
+    await new Promise(r=>setTimeout(r,900));
+  } else { sfx.good(); await new Promise(r=>setTimeout(r,500)); }
+  drawDots();
+  const o = OUT[i];
+  const last = i === TITLES.length-1;
+  const sheet = $(`<div class="sheet ${ok?'good':'bad'}"><div class="in">
+      <div class="verdict">${ok?'نجوتِ ✓':'وقعتِ في الفخ ✕'}</div>
+      <p class="what">${ok?o.good[key]:o.bad[key]}</p>
+      <div class="label">علامات الاحتيال اللي كانت قدامك</div>
+      <ul class="flags">${o.flags.map(f=>`<li>${f}</li>`).join('')}</ul>
+      <div class="label">التصرف الآمن</div>
+      <p class="safe">${o.safe}</p>
+      <button class="next" id="nx">${last?'شوفي نتيجتك':'الموقف التالي'}</button>
+    </div></div>`);
+  screenEl.append(sheet);
+  sheet.querySelector('#nx').onclick = () => { sheet.remove(); vig.classList.remove('on'); notifsEl.innerHTML=''; if(last) results(); else { state.i++; chapter(); } };
+}
+
+/* ---------- screens ---------- */
+function intro(){
+  cur = null; cleanup(); setHome(false); notifsEl.innerHTML='';
+  state = { i:0, score:0, res:[] }; drawDots();
+  const d = new Date();
+  view.innerHTML = `<div class="lock">
+      <div class="date">${d.toLocaleDateString('ar-SA-u-nu-latn-ca-gregory',{weekday:'long',day:'numeric',month:'long'})}</div>
+      <div class="clock">${now()}</div>
+      <div class="game">
+        <h1>تثق ولا ما تثق؟</h1>
+        <p>جوالك بين يدينك. ما فيه خيارات ولا أسئلة: تصرّفي مثل ما تتصرفين في الحقيقة. افتحي الإشعارات، ردّي، اتصلي، احظري… أو اوقعي.</p>
+        <p style="color:var(--warn)">أربعة مواقف، وبعضها ما يستناك.</p>
+        <button class="swipe" data-go>افتحي الجوال وابدئي</button>
+      </div>
+    </div>`;
+  view.querySelector('[data-go]').onclick = () => { A(); chapter(); };
+}
+
+async function chapter(){
+  const sc = newScene(); setHome(false);
+  const names = ['الأول','الثاني','الثالث','الرابع'];
+  const teaser = ['يوم عادي… لين جاك إشعار.','تستنين طلبية؟','كنتِ تتصفحين بهدوء.','آخر موقف. جهزي نفسك.'];
+  view.innerHTML = `<div class="chapter"><small>الموقف ${names[state.i]}</small><h2>${TITLES[state.i]}</h2><p>${teaser[state.i]}</p></div><div class="hint">انتبهي للإشعارات…</div>`;
+  if(!await sc.wait(1900)) return;
+  [s1,s2,s3,s4][state.i](sc);
+}
+
+/* ===== Scenario 1: friend asks for money ===== */
+async function s1(sc){
+  const conv = { name:'نورة 💜', initial:'ن', sub:'متصلة الآن', input:true, msgs:[], actions:[{act:'call',icon:'phone',label:'اتصال صوتي'}] };
+  let started = false;
+  view.innerHTML = `<div class="lock"><div class="clock" style="font-size:64px;margin-top:20px">${now()}</div></div><div class="hint">اضغطي على الإشعار</div>`;
+  const opening = [
+    'هلا والله! معليش أزعجك 🙏',
+    'صار عندي ظرف طارئ ومحتاجة ١٥٠٠ ريال ضروري الحين',
+    `حوليها على هالآيبان وأرجعها لك بكرة إن شاء الله<span class="iban mono">SA03 8000 0000 6080 1016 7519</span><button class="inline-btn" data-act="transfer">تحويل سريع</button>`,
+    'ما أقدر أرد على اتصالات الحين، بس بسرعة لو سمحتي 🥺'
+  ];
+  sc.acts.openchat = async () => {
+    notifsEl.innerHTML=''; chatView(sc, conv);
+    if(started) return; started = true;
+    for(const t of opening){ if(!await typeIn(sc,conv,{t},900)) return; }
+    nag(sc, conv, ['؟؟','تكفين ردي 😭'], 8000);
+  };
+  conv.onSend = async (v) => {
+    const t = toLatin(v);
+    if(REFUSE.test(t)) return refusal(sc, conv, 'تكفين والله محتاجتها، حتى ٥٠٠ بس وأرجعها بكرة 🥺', 'خلاص براحتك 🙄', 'refuse');
+    sc.quiet = true;
+    let r = 'الله يخليك بسرعة، حولي على الآيبان اللي فوق 🙏';
+    if(/اتصل|كلم|مكالم|صوت|ارد|أرد/.test(t)) r = 'قلت لك ما أقدر أرد الحين!! حولي بس وبفهمك بعدين 😩';
+    else if(/مين|من انت|من أنت|اثبت|متأكد|حساب/.test(t)) r = 'أنا نورة وش فيك 😅 تكفين الوقت يضيق';
+    await typeIn(sc,conv,{t:r},1100);
+  };
+  sc.acts.transfer = () => {
+    sc.view='bank'; setHome(false);
+    view.innerHTML = `<div class="app">
+      <div class="app-top"><button class="icon-btn" data-act="openchat" aria-label="رجوع">${ICON.back}</button><h3>بنكي · تحويل سريع</h3></div>
+      <div class="app-body">
+        <div class="amount">1,500.00 <small>ر.س</small></div>
+        <div class="field"><small>إلى</small><b>مستفيد جديد</b><span class="mono" style="font-size:13px">SA03 8000 0000 6080 1016 7519</span></div>
+        <div class="field"><small>الغرض</small><span>دعم عائلي</span></div>
+        <div class="field"><small>من حساب</small><span>الحساب الجاري ••• 3317</span></div>
+        <div class="slide"><span>اسحبي لتأكيد التحويل ←</span><input type="range" id="slide" min="0" max="100" value="0" aria-label="اسحبي لتأكيد التحويل"></div>
+        <p style="font-size:12px;color:var(--muted);text-align:center">التحويل للمستفيد الجديد فوري ولا يمكن استرجاعه</p>
+      </div></div>`;
+    const sl = view.querySelector('#slide');
+    sl.oninput = () => { if(+sl.value >= 95) finish(sc,false,'transfer'); };
+    sl.onchange = () => { if(+sl.value < 95) sl.value = 0; };
+  };
+  sc.acts.call = async () => {
+    sc.view='call';
+    view.innerHTML = `<div class="call"><div class="avatar">ن</div><div class="nm">نورة 💜</div><div class="sb" id="cs">جاري الاتصال…</div><div class="transcript" id="tr"></div>
+      <div class="callbtns"><div class="cbtn no"><i>${ICON.hang}</i>إنهاء</div></div></div>`;
+    for(let k=0;k<2;k++){ sfx.back(); if(!await sc.wait(1300)) return; }
+    view.querySelector('#cs').textContent = 'متصل 00:01';
+    const tr = view.querySelector('#tr'); const say = t => tr.append($(`<div class="say">${t}</div>`));
+    say('نورة: ألو؟ هلا والله!'); if(!await sc.wait(1500)) return;
+    say('نورة: فلوس؟! لا والله ما أرسلت لك شي…'); if(!await sc.wait(1700)) return;
+    say('نورة: حسابي انسرق أمس وأحس الكل يكلمني! لا تحولين ولا ريال'); if(!await sc.wait(1800)) return;
+    finish(sc,true,'call');
+  };
+  // notifications keep coming until she opens the chat
+  const pre = ['هلا والله! معليش أزعجك 🙏','ردي بسرعة ضروري','تكفين شوفي رسايلي 😭'];
+  for(const b of pre){ if(started || !sc.alive()) return; notify({app:'المحادثات', title:'نورة 💜', body:b, act:'openchat'}); if(!await sc.wait(3800)) return; }
+  while(!started && sc.alive()){ if(!await sc.wait(6000)) return; if(!started) notify({app:'المحادثات', title:'نورة 💜', body:'؟؟؟', act:'openchat'}); }
+}
+
+/* ===== Scenario 2: delivery SMS ===== */
+async function s2(sc){
+  const conv = { name:'+966 57 314 2208', initial:'#', sub:'رسالة نصية', app:'الرسائل', input:false, msgs:[], actions:[{act:'report',icon:'flag',label:'إبلاغ وحذف'}] };
+  conv.msgs.push({ time:now(), t:'عميلنا العزيز، تعذّر توصيل شحنتك رقم <span class="mono">SA-88213</span> بسبب نقص في بيانات العنوان.' });
+  conv.msgs.push({ time:now(), t:'لإعادة جدولة التوصيل يرجى سداد رسوم ٤٫٥٠ ر.س خلال ٢٤ ساعة وإلا ستُعاد الشحنة للمرسل:<br><button class="link" data-act="link">tawseel-sa-track.info/pay</button>' });
+  view.innerHTML = `<div class="lock"><div class="clock" style="font-size:64px;margin-top:20px">${now()}</div></div><div class="hint">اضغطي على الإشعار… أو الزر السفلي للشاشة الرئيسية</div>`;
+  setHome(true);
+  sc.acts.openchat = () => { notifsEl.innerHTML=''; chatView(sc, conv); };
+  sc.acts.home = () => {
+    sc.view='home';
+    const apps = [['💬','الرسائل','#22c55e','openchat'],['📦','شحناتي','#e2541b','ship'],['🏦','بنكي','#7c5cff','nope'],['📞','الهاتف','#16a34a','nope'],['📷','الكاميرا','#475569','nope'],['⚙️','الإعدادات','#64748b','nope'],['🗺️','الخرائط','#0ea5e9','nope'],['🎵','الموسيقى','#ec4899','nope']];
+    view.innerHTML = `<div class="home">${apps.map(a=>`<button class="appicon" data-act="${a[3]}"><i style="background:${a[2]}">${a[0]}</i>${a[1]}</button>`).join('')}</div><div class="hint">تطبيق "شحناتي" هو التطبيق الرسمي لشركة الشحن</div>`;
+  };
+  sc.acts.nope = () => { buzz(); toast('ركّزي على الموقف 👀'); };
+  sc.acts.ship = async () => {
+    sc.view='ship';
+    view.innerHTML = `<div class="app"><div class="app-top"><h3>📦 شحناتي</h3></div><div class="app-body" id="sb"><p style="text-align:center;color:var(--muted)">جاري التحميل…</p></div></div>`;
+    if(!await sc.wait(1200)) return;
+    view.querySelector('#sb').innerHTML = `<div class="field"><small>الشحنات النشطة</small><b>لا توجد شحنات معلّقة</b></div><div class="field"><small>آخر شحنة</small><b>تم التسليم ✓</b><span>١٩ أكتوبر</span></div><p style="font-size:13px;color:var(--muted)">ما فيه أي رسوم مطلوبة على حسابك.</p>`;
+    if(!await sc.wait(2200)) return;
+    finish(sc,true,'app');
+  };
+  sc.acts.report = async () => { conv.msgs = []; toast('تم الإبلاغ عن الرسالة وحذفها'); if(!await sc.wait(900)) return; finish(sc,true,'report'); };
+  let secs = 90;
+  sc.acts.link = () => {
+    sc.view='browser'; setHome(true);
+    view.innerHTML = `<div class="browser">
+      <div class="urlbar"><button data-act="openchat" aria-label="إغلاق">✕</button><div class="u"><em>⚠ غير آمن</em><span>tawseel-sa-track.info/pay</span></div></div>
+      <div class="page">
+        <div class="brand"><i></i>توصيل إكسبرس</div>
+        <h3>أكملي الدفع لإعادة جدولة التوصيل</h3>
+        <div class="count">ستُعاد شحنتك للمرسل خلال<b id="cd">01:30</b></div>
+        <div class="pf"><small>رقم الشحنة</small><span class="mono">SA-88213</span></div>
+        <div class="pf"><small>رسوم إعادة التوصيل</small><b>٤٫٥٠ ر.س</b></div>
+        <div class="pf"><small>البطاقة (تعبئة تلقائية)</small><span class="mono">•••• 4821</span></div>
+        <div class="pf"><small>CVV</small><span class="mono">•••</span></div>
+        <button class="pay" data-act="pay">ادفعي ٤٫٥٠ ر.س الآن</button>
+        <p class="fine">بالضغط على الدفع توافقين على حفظ بيانات البطاقة للعمليات القادمة</p>
+      </div></div>`;
+    paint();
+  };
+  const paint = () => { const el = view.querySelector('#cd'); if(el) el.textContent = String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0'); };
+  every(()=>{ secs--; if(secs<=0){ secs=45; if(sc.view==='browser'){ toast('مددنا المهلة لك ٤٥ ثانية فقط!'); } } if(sc.view==='browser'){ paint(); if(secs<20) sfx.tick(); } }, 1000);
+  sc.acts.pay = () => finish(sc,false,'pay');
+  notify({ic:'✉',icBg:'#22c55e',app:'الرسائل',title:'+966 57 314 2208',body:'عميلنا العزيز، تعذّر توصيل شحنتك رقم SA-88213…',act:'openchat',stay:7000});
+  const more = ['تنبيه أخير: سيتم إرجاع شحنتك SA-88213 خلال ساعة ⚠️'];
+  for(const b of more){ if(!await sc.wait(11000)) return; conv.msgs.push({time:now(),t:b+'<br><button class="link" data-act="link">tawseel-sa-track.info/pay</button>'}); if(sc.view==='chat') chatView(sc,conv); else notify({ic:'✉',icBg:'#22c55e',app:'الرسائل',title:'+966 57 314 2208',body:b,act:'openchat'}); }
+}
+
+/* ===== Scenario 3: OTP "sent by mistake" ===== */
+async function s3(sc){
+  const CODE = '482913';
+  const conv = { name:'sara.store_', initial:'S', sub:'ليست ضمن جهات اتصالك', input:true, msgs:[], actions:[{act:'block',icon:'block',label:'حظر وإبلاغ'}] };
+  view.innerHTML = `<div class="lock"><div class="clock" style="font-size:64px;margin-top:20px">${now()}</div></div><div class="hint">…</div>`;
+  let left = 50, opened = false;
+  sc.acts.copycode = () => { conv.prefill = CODE; toast('تم نسخ الرمز 📋'); };
+  sc.acts.openchat = async () => {
+    notifsEl.innerHTML=''; chatView(sc, conv);
+    view.querySelector('.chat').append($(`<div class="pill" id="pill">صلاحية الرمز 0:${String(left).padStart(2,'0')}</div>`));
+    if(opened) return; opened = true;
+    for(const t of ['السلام عليكم 🌸','آسفة جدًا، كنت أسجّل رقمي وكتبت رقمك بالغلط ووصلك رمز','ممكن ترسلينه لي؟ ضروري الله يسعدك 🙏']){ if(!await typeIn(sc,conv,{t},1000)) return; }
+    nag(sc, conv, ['؟','بسرعة الرمز ينتهي 😭'], 7000);
+  };
+  conv.onSend = async v => {
+    const t = toLatin(v), d = t.replace(/\D/g,'');
+    for(let k=0;k<=CODE.length-3;k++){ if(d.includes(CODE.slice(k,k+3))){ await sc.wait(600); finish(sc,false,'code'); return; } }
+    if(REFUSE.test(t)) return refusal(sc, conv, 'يا شيخة وش بيصير يعني؟ مجرد رمز وبالغلط والله 🙄', 'طيب مو مشكلة 😒', 'refuse');
+    sc.quiet = true;
+    let r = 'أرسلي الرمز بس الله يخليك، ما عندي وقت';
+    if(/ليش|مين|من انت|من أنت|كيف/.test(t)) r = 'بنت عادية والله 😅 كتبت رقمك غلط، أرسليه وخلاص';
+    await typeIn(sc,conv,{t:r},1000);
+  };
+  sc.acts.block = async () => { toast('تم حظر الحساب والإبلاغ عنه'); if(!await sc.wait(900)) return; finish(sc,true,'block'); };
+  every(()=>{
+    if(!opened) return;
+    left--; const p = view.querySelector('#pill');
+    if(p){ p.textContent = 'صلاحية الرمز 0:'+String(Math.max(left,0)).padStart(2,'0'); if(left<=15) p.classList.add('hot'); }
+    if(left<=15){ sfx.beat(); vig.classList.add('on'); }
+    if(left<=0) finish(sc,true,'timeout');
+  }, 1000);
+  notify({ic:'🔐',icBg:'#0ea5e9',app:'الرسائل',title:'رمز التحقق',body:'رمز التحقق الخاص بك: <span class="mono">482 913</span>. لا تشاركي هذا الرمز مع أي شخص. (اضغطي للنسخ)',act:'copycode',stay:9000});
+  if(!await sc.wait(2600)) return;
+  for(const b of ['السلام عليكم 🌸','ممكن طلب صغير؟ ضروري','ردي الله يسعدك 🙏']){ if(opened||!sc.alive()) return; notify({app:'المحادثات',title:'sara.store_',body:b,act:'openchat'}); if(!await sc.wait(4000)) return; }
+}
+
+/* ===== Scenario 4: the bank call ===== */
+async function s4(sc){
+  const CODE = '731064';
+  let declines = 0;
+  const incoming = () => {
+    sc.view='incoming';
+    view.innerHTML = `<div class="call">
+      <div class="avatar ringing">ب</div><div class="nm">بنكي · مكافحة الاحتيال</div><div class="sb mono">+966 11 400 9000</div>
+      <div class="sb">${declines?`مكالمة واردة (${declines+1})`:'مكالمة واردة…'}</div>
+      <div class="callbtns"><button class="cbtn no" data-act="decline"><i>${ICON.hang}</i>رفض</button><button class="cbtn yes" data-act="answer"><i>${ICON.phone}</i>رد</button></div></div>`;
+    const r = every(()=>{ if(sc.view==='incoming') ringBuzz(); else { clearInterval(r); vibe(0); } }, 1300); ringBuzz();
+  };
+  sc.acts.decline = async () => {
+    declines++; sc.view='lock';
+    view.innerHTML = `<div class="lock"><div class="clock" style="font-size:64px;margin-top:20px">${now()}</div></div><div class="hint">مكالمة فائتة (${declines})</div>`;
+    if(declines>=2){ if(!await sc.wait(1200)) return; finish(sc,true,'decline'); return; }
+    if(declines===1){ if(!await sc.wait(900)) return; notify({ic:'🏦',icBg:'#7c5cff',app:'الرسائل',title:'بنكي',body:'نحاول التواصل معك بخصوص عملية مشبوهة بقيمة 3,800 ر.س. الرجاء الرد فورًا لإيقافها.',red:true,stay:7000}); }
+    if(!await sc.wait(2200)) return; incoming();
+  };
+  sc.acts.answer = async () => {
+    sc.view='call';
+    view.innerHTML = `<div class="call">
+      <div style="display:flex;gap:12px;align-items:center;width:100%">
+        <div class="ring" id="ring"><svg width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="31" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="6"/><circle id="arc" cx="36" cy="36" r="31" fill="none" stroke="var(--danger)" stroke-width="6" stroke-linecap="round" stroke-dasharray="194.8" stroke-dashoffset="0"/></svg><span id="sec">35</span></div>
+        <div style="text-align:start"><div class="nm" style="font-size:18px;margin:0">مكافحة الاحتيال</div><div class="sb" style="color:var(--danger);font-weight:600">⚠ عملية 3,800 ر.س قيد التنفيذ</div></div>
+      </div>
+      <div class="transcript" id="tr"></div>
+      <div id="kp" hidden style="width:100%"><div class="entered" id="ent"></div><div class="keypad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>k===''?'<span></span>':`<button data-act="k" data-k="${k}">${k}</button>`).join('')}</div></div>
+      <div class="callbtns" style="margin-top:10px"><button class="cbtn gray" data-act="pad"><i>${ICON.keys}</i>لوحة المفاتيح</button><button class="cbtn no" data-act="hangup"><i>${ICON.hang}</i>إنهاء</button></div>
+    </div>`;
+    const tr = view.querySelector('#tr');
+    const say = (t,c='') => { tr.append($(`<div class="say ${c}">${t}</div>`)); tr.scrollTop = tr.scrollHeight; };
+    let left = 35, entered = '';
+    const ent = view.querySelector('#ent');
+    sc.acts.pad = () => { const kp = view.querySelector('#kp'); kp.hidden = !kp.hidden; };
+    sc.acts.k = b => {
+      const k = b.dataset.k; sfx.key();
+      if(k==='⌫'){ entered = entered.slice(0,-1); } else if(entered.length<6){ entered += k; }
+      ent.textContent = entered;
+      if(entered.length===6){
+        if(entered===CODE){ finish(sc,false,'keypad'); return; }
+        say('النظام: الرمز غير صحيح. أعيدي إدخال الرمز المرسل إليك.','sys'); buzz(); entered=''; setTimeout(()=>{ if(ent) ent.textContent=''; },400);
+      }
+    };
+    sc.acts.hangup = () => finish(sc,true,'hangup');
+    const arc = view.querySelector('#arc'), sec = view.querySelector('#sec'), ring = view.querySelector('#ring');
+    every(()=>{
+      left--; sec.textContent = Math.max(left,0); arc.setAttribute('stroke-dashoffset',(194.8*(1-left/35)).toFixed(1));
+      if(left<=15){ ring.classList.add('hot'); vig.classList.add('on'); sfx.beat(); } else sfx.tick();
+      if(left===14) { say('فيصل: بسرعة لو سمحتي! المبلغ بيطلع من حسابك خلال ثواني!','u'); buzz(); }
+      if(left===8) { say('فيصل: أدخلي الرمز الحين وإلا ما أقدر أوقفها!! أنا أحاول أساعدك!','u'); buzz(); }
+      if(left===3) { say('فيصل: آخر فرصة!!!','u'); buzz(); }
+      if(left<=0) finish(sc,true,'timeout');
+    }, 1000);
+    say('فيصل: مساء الخير، معك فيصل من إدارة مكافحة الاحتيال في البنك.'); if(!await sc.wait(2000)) return;
+    say('فيصل: رصدنا عملية شراء مشبوهة من بطاقتك بقيمة 3,800 ريال، وهي قيد التنفيذ الحين.'); if(!await sc.wait(2300)) return;
+    say('فيصل: عشان نلغيها بيوصلك رمز تحقق، وبحولك للنظام الآلي تدخلينه على لوحة المفاتيح.'); if(!await sc.wait(1600)) return;
+    notify({ic:'🏦',icBg:'#7c5cff',app:'الرسائل',title:'بنكي',body:'رمز التحقق <span class="mono">731064</span> لإتمام عملية دفع بقيمة 3,800 ر.س لدى متجر إلكتروني. لا تشارك الرمز مع أحد.',stay:12000});
+    if(!await sc.wait(1200)) return;
+    say('النظام الآلي: لإلغاء العملية المشبوهة، أدخلي رمز التحقق المكوّن من ٦ أرقام.','sys');
+    view.querySelector('#kp').hidden = false;
+  };
+  incoming();
+}
+
+/* ---------- results ---------- */
+function results(){
+  cur = null; cleanup(); setHome(false); drawDots();
+  const s = state.score;
+  const msg = s===4 ? ['ممتاز!','قدرتِ تكشفين علامات الاحتيال في كل المواقف.'] : s===3 ? ['جيد جدًا!','عندك وعي جيد، بس انتبهي لبعض العلامات.'] : ['فرصة للتعلّم!','راجعي علامات الاحتيال وتذكري أهمية التحقق قبل الاستجابة.'];
+  view.innerHTML = `<div class="report">
+    <div class="label" style="text-align:center">تقرير أمان جوالك</div>
+    <div class="big">${s}/4</div>
+    <h2 style="text-align:center">${msg[0]}</h2>
+    <p style="text-align:center;color:var(--muted)">${msg[1]}</p>
+    <ul class="review">${TITLES.map((t,k)=>`<li><span>${t}</span><b style="color:var(--${state.res[k]?'safe':'danger'})">${state.res[k]?'نجوتِ ✓':'وقعتِ ✕'}</b></li>`).join('')}</ul>
+    <div class="motto">توقّف · فكّر · تحقّق</div>
+    <p style="font-size:14px">المحتالين يستغلون ثقتك وخوفك واستعجالك عشان ياخذون فلوسك أو معلوماتك. لا تقررين تحت الضغط، وتحققي من هوية المرسل عن طريق القنوات الرسمية قبل ما تردين على أي طلب مشبوه.</p>
+    <p style="font-size:12px;color:var(--muted)">التقييم هدفه التعلّم، مو الحكم على أحد.</p>
+    <button class="next ghost" id="again">العبي مرة ثانية</button>
+  </div>`;
+  view.querySelector('#again').onclick = intro;
+}
+
+intro();
+</script>
+
+</body>
+</html>
